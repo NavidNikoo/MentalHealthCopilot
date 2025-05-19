@@ -1,0 +1,69 @@
+.book-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background-image: url('/assets/leather.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border: 4px solid #5a3e2b;
+}
+
+
+.page {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top left, #fcf8ef, #f0e6d2);
+    border: 2px solid #d0bfa1;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+    font-family: 'Georgia', serif;
+    color: #4b3b2b;
+}
+
+.journal-title {
+    font-family: 'Georgia', serif;
+    text-align: center;
+    font-size: 2rem;
+    color: #5a3e2b;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #ccc;
+}
+
+.page h3 {
+    font-size: 1.3rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.page p {
+    font-size: 1rem;
+    color: #444;
+    margin: 0.3rem 0;
+}
+
+.page-number {
+    text-align: center;
+    color: #bbb;
+    font-size: 0.85rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.page:nth-child(even) {
+    background: #fcfcfc;
+}
+.page:nth-child(odd) {
+    background: #f9f9f9;
+}
+
+.page-content {
+    padding: 1.5rem;
+    font-family: Georgia, serif;
+    font-size: 15px;
+    line-height: 1.5;
+}

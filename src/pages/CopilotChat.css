@@ -1,0 +1,68 @@
+.copilot-container {
+    padding: 2rem;
+    max-width: 700px;
+    margin: auto;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.copilot-title {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.chat-box {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.message {
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.message.user {
+    background-color: #d1e7dd;
+    align-self: flex-end;
+    text-align: right;
+    margin-left: auto;
+}
+
+.message.assistant {
+    background-color: #f8d7da;
+    align-self: flex-start;
+}
+
+.input-area {
+    display: flex;
+    margin-top: 1rem;
+    gap: 1rem;
+}
+
+input[type="text"] {
+    flex: 1;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 0.75rem 1.2rem;
+    background-color: #4bc0c0;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #35a8a8;
+}
