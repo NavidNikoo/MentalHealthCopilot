@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 
-function Login() {
+function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    const handleLogin = async () => {
+    const handleSignup = async () => {
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            alert('Login successful!');
+            await createUserWithEmailAndPassword(auth, email, password);
+            alert('Sign up successful!');
         } catch (err) {
             setError(err.message);
         }
@@ -18,13 +18,13 @@ function Login() {
 
     return (
         <div style={{ padding: '2rem' }}>
-            <h2>Login</h2>
+            <h2>Sign Up</h2>
             <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
             <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} />
-            <button onClick={handleLogin}>Login</button>
+            <button onClick={handleSignup}>Create Account</button>
             {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
     );
 }
 
-export default Login;
+export default SignUp;
