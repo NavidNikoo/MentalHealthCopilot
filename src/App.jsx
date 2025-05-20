@@ -6,10 +6,21 @@ import CopilotChat from './pages/CopilotChat';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import PrivateRoute from './components/PrivateRoute';
+import { useAuth } from './context/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from './firebase';
 
-function App() {
+function AppRoutes() {
+    const { user } = useAuth();
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        window.location.href = '/login'; // fallback method to redirect after logout
+    };
+
     return (
-        <Router>
+        <>
             <nav style={{
                 display: 'flex',
                 gap: '1rem',
@@ -18,25 +29,39 @@ function App() {
                 borderBottom: '1px solid #ccc'
             }}>
                 <Link to="/">Home</Link>
-                <Link to="/journal">Journal</Link>
-                <Link to="/copilot">Copilot Chat</Link>
-                <Link to="/dashboard">Dashboard</Link>
-                <Link to="/login">Login</Link>
-                <Link to="/signup">Sign Up</Link>
+                {user ? (
+                    <>
+                        <Link to="/journal">Journal</Link>
+                        <Link to="/copilot">Copilot Chat</Link>
+                        <Link to="/dashboard">Dashboard</Link>
+                        <button onClick={handleLogout} style={{ cursor: 'pointer' }}>Logout</button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/login">Login</Link>
+                        <Link to="/signup">Sign Up</Link>
+                    </>
+                )}
             </nav>
 
             <main style={{ padding: '2rem' }}>
                 <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/journal" element={<Journal />} />
-                    <Route path="/copilot" element={<CopilotChat />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<SignUp />} />
+                    <Route path="/journal" element={<PrivateRoute><Journal /></PrivateRoute>} />
+                    <Route path="/copilot" element={<PrivateRoute><CopilotChat /></PrivateRoute>} />
+                    <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                 </Routes>
             </main>
-        </Router>
+        </>
     );
 }
 
-export default App;
+export default function App() {
+    return (
+        <Router>
+            <AppRoutes />
+        </Router>
+    );
+}
