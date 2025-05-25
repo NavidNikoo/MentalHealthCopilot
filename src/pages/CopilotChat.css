@@ -3,6 +3,8 @@
     max-width: 700px;
     margin: auto;
     font-family: 'Segoe UI', sans-serif;
+    overflow-y: auto;
+    background: #fcfcfc;
 }
 
 .copilot-title {
@@ -66,3 +68,4 @@ button {
 button:hover {
     background-color: #35a8a8;
 }
+

@@ -1,5 +1,5 @@
-// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Box, Flex, Button } from '@chakra-ui/react';
 import Home from './pages/Home';
 import Journal from './pages/Journal';
 import CopilotChat from './pages/CopilotChat';
@@ -16,25 +16,28 @@ function AppRoutes() {
 
     const handleLogout = async () => {
         await signOut(auth);
-        window.location.href = '/login'; // fallback method to redirect after logout
+        window.location.href = '/login';
     };
 
     return (
-        <>
-            <nav style={{
-                display: 'flex',
-                gap: '1rem',
-                padding: '1rem',
-                background: '#f5f5f5',
-                borderBottom: '1px solid #ccc'
-            }}>
+        <Flex direction="column" w="100vw" h="100vh">
+            <Box
+                as="nav"
+                display="flex"
+                gap="1rem"
+                p="1rem"
+                bg="gray.100"
+                borderBottom="1px solid #ccc"
+            >
                 <Link to="/">Home</Link>
                 {user ? (
                     <>
                         <Link to="/journal">Journal</Link>
                         <Link to="/copilot">Copilot Chat</Link>
                         <Link to="/dashboard">Dashboard</Link>
-                        <button onClick={handleLogout} style={{ cursor: 'pointer' }}>Logout</button>
+                        <Button size="sm" colorScheme="gray" onClick={handleLogout}>
+                            Logout
+                        </Button>
                     </>
                 ) : (
                     <>
@@ -42,9 +45,9 @@ function AppRoutes() {
                         <Link to="/signup">Sign Up</Link>
                     </>
                 )}
-            </nav>
+            </Box>
 
-            <main style={{ padding: '2rem' }}>
+            <Box flex="1" h="100%" w="100%">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
@@ -53,8 +56,8 @@ function AppRoutes() {
                     <Route path="/copilot" element={<PrivateRoute><CopilotChat /></PrivateRoute>} />
                     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                 </Routes>
-            </main>
-        </>
+            </Box>
+        </Flex>
     );
 }
 

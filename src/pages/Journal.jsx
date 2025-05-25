@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import MoodSelector from '../components/MoodSelector';
 import JournalBook from '../components/JournalBook';
+import {
+    saveJournalEntry,
+    listenToJournalEntries
+} from '../utils/firebaseUtils';
+import { auth } from '../firebase';
 
 function Journal() {
     const [mood, setMood] = useState(null);
@@ -11,11 +16,24 @@ function Journal() {
     const [latestIndex, setLatestIndex] = useState(null);
 
     useEffect(() => {
-        const savedLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
-        setLogs(savedLogs);
+        const user = auth.currentUser;
+        let unsubscribe;
+
+        if (user) {
+            unsubscribe = listenToJournalEntries(user.uid, (entries) => {
+                setLogs(entries);
+            });
+        } else {
+            const savedLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
+            setLogs(savedLogs);
+        }
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!mood) {
             alert('Please select a mood.');
             return;
@@ -27,24 +45,27 @@ function Journal() {
             value: mood.value,
             color: mood.color,
             note,
-            reflection: '' // Will be filled after reflection
+            reflection: ''
         };
 
         const updatedLogs = [...logs, newEntry];
         localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         setLogs(updatedLogs);
-
         setLatestIndex(updatedLogs.length - 1);
         setMood(null);
         setNote('');
         setAwaitingReflection(true);
+
+        if (auth.currentUser) {
+            await saveJournalEntry(auth.currentUser.uid, newEntry);
+        }
     };
 
     const handleReflection = async () => {
         const moodLabel = logs[latestIndex]?.label || '';
         const userNote = logs[latestIndex]?.note || '';
 
-        const prompt = `The user clearly expressed the mood "${moodLabel}" and wrote the following journal note: "${userNote}". Based on this, write a brief, emotionally intelligent reflection that validates what they’re feeling and gently helps them explore it further. The user already knows what they’re feeling, so do not assume the emotion is undefined. Be warm, specific, and affirming.`;
+        const prompt = `The user clearly expressed the mood "${moodLabel}" and wrote the following journal note: "${userNote}". Based on this, write a brief, emotionally intelligent reflection that validates what they’re feeling and gently helps them explore it further.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -55,22 +76,25 @@ function Journal() {
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [
-                    { role: 'system', content: 'You are a supportive and emotionally intelligent journaling assistant who always validates the user’s stated feelings.' },
+                    { role: 'system', content: 'You are a supportive journaling assistant.' },
                     { role: 'user', content: prompt }
                 ]
             })
         });
 
         const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || 'Something went wrong. Try again later.';
+        const reply = data.choices?.[0]?.message?.content || 'Something went wrong.';
         setCopilotResponse(reply);
         setAwaitingReflection(false);
 
-        // Update the log entry
         const updatedLogs = [...logs];
         updatedLogs[latestIndex].reflection = reply;
         localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         setLogs(updatedLogs);
+
+        if (auth.currentUser) {
+            await saveJournalEntry(auth.currentUser.uid, updatedLogs[latestIndex]);
+        }
     };
 
     return (
@@ -93,7 +117,7 @@ function Journal() {
 
             {awaitingReflection && (
                 <div style={{ marginTop: '2rem' }}>
-                    <p>Would you like a reflection from your Copilot based on this entry?</p>
+                    <p>Would you like a reflection from your Copilot?</p>
                     <button onClick={handleReflection}>Get Reflection</button>
                 </div>
             )}
@@ -108,22 +132,23 @@ function Journal() {
                     <strong>Copilot:</strong>
                     <p>{copilotResponse}</p>
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             const updated = [...logs];
                             updated[latestIndex].reflection = copilotResponse;
                             localStorage.setItem('moodLogs', JSON.stringify(updated));
                             setLogs(updated);
-                            alert('Reflection saved to journal!');
-                            setCopilotResponse(''); // Optionally clear after save
+                            setCopilotResponse('');
+                            alert('Reflection saved!');
+                            if (auth.currentUser) {
+                                await saveJournalEntry(auth.currentUser.uid, updated[latestIndex]);
+                            }
                         }}
                         style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' }}
                     >
-                        Save Reflection to Journal
+                        Save Reflection
                     </button>
                 </div>
             )}
-
-
 
             {logs.length > 0 && (
                 <div style={{ marginTop: '3rem' }}>
