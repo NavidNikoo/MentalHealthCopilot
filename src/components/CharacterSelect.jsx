@@ -1,10 +1,30 @@
 import React from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { saveChatMessageToSession } from '../utils/firebaseUtils';
+import { db } from '../firebase';
 import characters from '../data/characters';
 import './CharacterSelect.css';
 
-function CharacterSelect({ onChoose }) {
-    const handleSelect = (char) => {
-        onChoose(char); // Pass the whole character object
+function CharacterSelect({ onChoose, auth, activeChatId, setCharacter, setMessages, messages }) {
+    const handleSelect = async (char) => {
+        if (!auth.currentUser || !activeChatId) return;
+
+        const chatRef = doc(db, 'users', auth.currentUser.uid, 'chats', activeChatId);
+        await updateDoc(chatRef, { characterId: char.id });
+        setCharacter(char);
+
+        if (messages.length === 0) {
+            const welcomeMessage = {
+                role: 'assistant',
+                content: `Hi, I'm ${char.name}, your ${char.role.toLowerCase()}. How can I support you today?`
+            };
+            await saveChatMessageToSession(auth.currentUser.uid, activeChatId, welcomeMessage);
+            setMessages([welcomeMessage]);
+        }
+
+        if (onChoose) {
+            onChoose(char); // Optional if you're using it for side effects
+        }
     };
 
     return (
@@ -23,6 +43,5 @@ function CharacterSelect({ onChoose }) {
         </div>
     );
 }
-
 
 export default CharacterSelect;

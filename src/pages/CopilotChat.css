@@ -69,3 +69,82 @@ button:hover {
     background-color: #35a8a8;
 }
 
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #fdecea;
+    padding: 1rem;
+    border-radius: 8px;
+    max-width: fit-content;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.typing-avatar {
+    font-size: 1.25rem;
+    animation: pulse 1.2s infinite ease-in-out;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.typing-dots span {
+    display: block;
+    width: 6px;
+    height: 6px;
+    background: #333;
+    border-radius: 50%;
+    opacity: 0;
+    animation: blink 1.4s infinite;
+}
+
+.typing-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Default fallback */
+.copilot-name {
+    font-weight: bold;
+}
+
+/* Unique colors for each character */
+.copilot-name.brett {
+    color: #1f8a70;
+}
+
+.copilot-name.britney {
+    color: #e57373;
+}
+
+.copilot-name.kai {
+    color: #5c6bc0;
+}
+
+.copilot-name.lee {
+    color: #00897b;
+}
+
+.copilot-name.zari {
+    color: #ba68c8;
+}
+
+

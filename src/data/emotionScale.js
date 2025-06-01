@@ -1,3 +1,6 @@
+{/* https://mayraleen.com/2021/02/23/5-life-changing-insights-about-the-emotional-scale/ */}
+
+
 export const emotionScale = [
     { value: 1, label: 'Joy/Appreciation/Love', color: '#ff69b4' },
     { value: 2, label: 'Passion', color: '#d87acc' },

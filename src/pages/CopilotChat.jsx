@@ -13,7 +13,10 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Sidebar from '../components/Sidebar';
 import CharacterSelect from '../components/CharacterSelect';
 import characters from '../data/characters';
+import TypingIndicator from '../components/TypingIndicator';
 import './CopilotChat.css';
+import CharacterHeader from '../components/CharacterHeader';
+
 
 function CopilotChat() {
     const [chats, setChats] = useState([]);
@@ -33,31 +36,36 @@ function CopilotChat() {
 
     useEffect(() => {
         if (!auth.currentUser || !activeChatId) return;
+
         localStorage.setItem('lastChatId', activeChatId);
-
         setLoadingCharacter(true);
-        (async () => {
-            const msgs = await fetchChatMessagesById(auth.currentUser.uid, activeChatId);
-            setMessages(msgs);
 
+        (async () => {
             try {
                 const chatRef = doc(db, 'users', auth.currentUser.uid, 'chats', activeChatId);
                 const chatDoc = await getDoc(chatRef);
+
                 if (chatDoc.exists()) {
-                    const savedCharacterId = chatDoc.data().characterId;
+                    const data = chatDoc.data();
+                    const savedCharacterId = data.characterId;
                     const foundCharacter = characters.find(c => c.id === savedCharacterId);
                     setCharacter(foundCharacter || null);
                 } else {
                     setCharacter(null);
                 }
+
+                const msgs = await fetchChatMessagesById(auth.currentUser.uid, activeChatId);
+                setMessages(msgs);
             } catch (e) {
-                console.error('Error fetching character:', e);
+                console.error('Error fetching chat data:', e);
                 setCharacter(null);
+                setMessages([]);
             } finally {
                 setLoadingCharacter(false);
             }
         })();
     }, [activeChatId]);
+
 
     useEffect(() => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -97,17 +105,10 @@ function CopilotChat() {
 
         const isFirstUserMessage = !messages.some(msg => msg.role === 'user');
 
-        if (isFirstUserMessage && character?.systemPrompt) {
-            const systemMessage = {
-                role: 'system',
-                content: character.systemPrompt
-            };
-            await saveChatMessageToSession(auth.currentUser.uid, activeChatId, systemMessage);
-            updatedMessages = [systemMessage, ...updatedMessages];
-        }
-
+        // Save only the user message, not the systemPrompt
         await saveChatMessageToSession(auth.currentUser.uid, activeChatId, userMessage);
 
+        // If this is the first message, generate a title for the chat
         if (isFirstUserMessage) {
             try {
                 const titleRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -130,13 +131,14 @@ function CopilotChat() {
                 if (titleRes.ok) {
                     const result = await titleRes.json();
                     const aiTitle = result.choices?.[0]?.message?.content?.trim();
-                    if (aiTitle) await renameChat(auth.currentUser.uid, activeChatId, aiTitle);
+                    if (aiTitle) {
+                        await renameChat(auth.currentUser.uid, activeChatId, aiTitle);
+                    }
                 }
             } catch (e) {
                 console.error('Title generation failed:', e);
             }
         }
-
         try {
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -164,7 +166,9 @@ function CopilotChat() {
         }
     };
 
+
     return (
+
         <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
             <Sidebar
                 chats={chats}
@@ -173,7 +177,9 @@ function CopilotChat() {
                 onNewChat={handleNewChat}
                 onRenameChat={handleRenameChat}
                 onDeleteChat={handleDeleteChat}
+                onReorderChats={setChats} // <- this updates the chat order
             />
+
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {/* Chat message scrollable area */}
@@ -187,52 +193,59 @@ function CopilotChat() {
                 }}>
                     {!loadingCharacter && !character && activeChatId && (
                         <CharacterSelect
-                            onChoose={async (char) => {
-                                if (!auth.currentUser || !activeChatId) return;
-                                const chatRef = doc(db, 'users', auth.currentUser.uid, 'chats', activeChatId);
-                                await updateDoc(chatRef, { characterId: char.id });
-                                setCharacter(char);
-                                setMessages([{
-                                    role: 'assistant',
-                                    content: `Hi, I'm ${char.name}, your ${char.role.toLowerCase()}. How can I support you today?`,
-                                }]);
-                            }}
+                            auth={auth}
+                            activeChatId={activeChatId}
+                            setCharacter={setCharacter}
+                            setMessages={setMessages}
+                            messages={messages}
                         />
+
                     )}
+
+                    {character && <CharacterHeader character={character} />}
 
                     {!loadingCharacter && character && (
                         <>
-                            <AnimatePresence>
-                                {messages.map((msg, idx) => (
-                                    <motion.div
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3 }}
-                                        style={{
-                                            backgroundColor: msg.role === 'user' ? '#daf3eb' : '#fdecea',
-                                            padding: '1rem',
-                                            borderRadius: '8px',
-                                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                            maxWidth: '85%'
-                                        }}
-                                    >
-                                        <strong>{msg.role === 'user' ? 'You' : 'Copilot'}:</strong> {msg.content}
-                                    </motion.div>
-                                ))}
-                                {loading && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        style={{ fontStyle: 'italic' }}
-                                    >
-                                        Copilot is typing...
-                                    </motion.div>
-                                )}
-                                <div ref={scrollRef} />
+                            <AnimatePresence mode="wait">
+                                <>
+                                    {messages.map((msg, idx) => (
+                                        <motion.div
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.3 }}
+                                            style={{
+                                                backgroundColor: msg.role === 'user' ? '#daf3eb' : '#fdecea',
+                                                padding: '1rem',
+                                                borderRadius: '8px',
+                                                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                                maxWidth: '85%',
+                                            }}
+                                        >
+                                            <strong>{msg.role === 'user' ? 'You' : character?.name || 'Copilot'}:</strong> {msg.content}
+                                        </motion.div>
+                                    ))}
+
+                                    {loading && (
+                                        <motion.div
+                                            key="typing"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="typing-indicator"
+                                        >
+                                            <div className="typing-avatar">💬</div>
+                                            <div className="typing-dots">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </>
                             </AnimatePresence>
+
                         </>
                     )}
                 </div>

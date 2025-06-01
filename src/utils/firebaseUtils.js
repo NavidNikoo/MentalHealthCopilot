@@ -1,16 +1,21 @@
-import { collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, setDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 
-export async function saveJournalEntry(uid, entry) {
-    try {
-        const userEntriesRef = collection(db, 'users', uid, 'journalEntries');
-        await addDoc(userEntriesRef, entry);
-        console.log('✅ Entry saved to Firestore');
-    } catch (error) {
-        console.error('❌ Failed to save entry:', error);
+
+export const saveJournalEntry = async (uid, entry) => {
+    const userCollection = collection(db, 'users', uid, 'journalEntries');
+
+    if (entry.id) {
+        const entryRef = doc(userCollection, entry.id);
+        const { id, ...data } = entry; // exclude `id` from saved data
+        await setDoc(entryRef, data, { merge: true });
+        return entry.id;
+    } else {
+        const docRef = await addDoc(userCollection, entry);
+        return docRef.id; // ⬅️ return the generated ID so the caller can save it
     }
-}
+};
 
 export async function fetchJournalEntries(uid) {
     const userEntriesRef = collection(db, 'users', uid, 'journalEntries');

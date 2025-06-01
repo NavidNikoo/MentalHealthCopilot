@@ -3,7 +3,7 @@ const characters = [
         id: 'brett',
         name: 'Brett',
         role: 'Performance Coach',
-        bio: 'Rod helps you build mental strength and resilience. Ideal for athletes, competitors, and anyone aiming to push beyond limits.',
+        bio: 'Brett helps you build mental strength and resilience. Ideal for athletes, competitors, and anyone aiming to push beyond limits.',
         avatar: '/avatars/brett.jpg',
         systemPrompt: 'You are Brett, a focused and driven mental performance coach. Help the user overcome self-doubt, stay disciplined, and pursue peak goals using techniques like visualization and positive reinforcement.'
     },

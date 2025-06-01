@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
+import {
+    Box,
+    Button,
+    Grid,
+    GridItem,
+    Text,
+    Textarea,
+    useColorModeValue,
+} from '@chakra-ui/react';
 import MoodSelector from '../components/MoodSelector';
-import JournalBook from '../components/JournalBook';
 import {
     saveJournalEntry,
-    listenToJournalEntries
+    listenToJournalEntries,
 } from '../utils/firebaseUtils';
 import { auth } from '../firebase';
 
@@ -17,21 +25,32 @@ function Journal() {
 
     useEffect(() => {
         const user = auth.currentUser;
-        let unsubscribe;
 
         if (user) {
-            unsubscribe = listenToJournalEntries(user.uid, (entries) => {
-                setLogs(entries);
+            // Fetch entries once and combine with localStorage if needed
+            listenToJournalEntries(user.uid, (entries) => {
+                // Merge entries with localStorage data to preserve reflection
+                const localLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
+
+                // Prevent duplicates by matching on date + note
+                const merged = [...entries];
+
+                localLogs.forEach((localEntry) => {
+                    const exists = merged.find(
+                        (e) => e.date === localEntry.date && e.note === localEntry.note
+                    );
+                    if (!exists) merged.push(localEntry);
+                });
+
+                setLogs(merged);
             });
         } else {
             const savedLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
             setLogs(savedLogs);
         }
-
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
     }, []);
+
+
 
     const handleSubmit = async () => {
         if (!mood) {
@@ -45,7 +64,7 @@ function Journal() {
             value: mood.value,
             color: mood.color,
             note,
-            reflection: ''
+            reflection: '',
         };
 
         const updatedLogs = [...logs, newEntry];
@@ -54,12 +73,14 @@ function Journal() {
         setLatestIndex(updatedLogs.length - 1);
         setMood(null);
         setNote('');
+        setCopilotResponse(''); // ✅ clear previous reflection display
         setAwaitingReflection(true);
 
         if (auth.currentUser) {
             await saveJournalEntry(auth.currentUser.uid, newEntry);
         }
     };
+
 
     const handleReflection = async () => {
         const moodLabel = logs[latestIndex]?.label || '';
@@ -71,92 +92,91 @@ function Journal() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+                Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [
                     { role: 'system', content: 'You are a supportive journaling assistant.' },
-                    { role: 'user', content: prompt }
-                ]
-            })
+                    { role: 'user', content: prompt },
+                ],
+            }),
         });
 
         const data = await response.json();
         const reply = data.choices?.[0]?.message?.content || 'Something went wrong.';
-        setCopilotResponse(reply);
+        setCopilotResponse('');
         setAwaitingReflection(false);
 
         const updatedLogs = [...logs];
         updatedLogs[latestIndex].reflection = reply;
         localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         setLogs(updatedLogs);
-
-        if (auth.currentUser) {
-            await saveJournalEntry(auth.currentUser.uid, updatedLogs[latestIndex]);
-        }
     };
 
+
     return (
-        <div style={{ padding: '2rem' }}>
+        <Box p={6}>
             <MoodSelector onSelect={setMood} />
 
             {mood && (
-                <div style={{ marginTop: '2rem' }}>
-                    <textarea
+                <Box mt={6}>
+                    <Textarea
                         placeholder="Want to add a note?"
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        style={{ width: '100%', height: '100px', padding: '1rem' }}
+                        rows={4}
                     />
-                    <button onClick={handleSubmit} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>
+                    <Button onClick={handleSubmit} mt={4} colorScheme="teal">
                         Save Mood
-                    </button>
-                </div>
+                    </Button>
+                </Box>
             )}
 
             {awaitingReflection && (
-                <div style={{ marginTop: '2rem' }}>
-                    <p>Would you like a reflection from your Copilot?</p>
-                    <button onClick={handleReflection}>Get Reflection</button>
-                </div>
-            )}
-
-            {copilotResponse && (
-                <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    backgroundColor: '#eef2f7',
-                    borderRadius: '8px'
-                }}>
-                    <strong>Copilot:</strong>
-                    <p>{copilotResponse}</p>
-                    <button
-                        onClick={async () => {
-                            const updated = [...logs];
-                            updated[latestIndex].reflection = copilotResponse;
-                            localStorage.setItem('moodLogs', JSON.stringify(updated));
-                            setLogs(updated);
-                            setCopilotResponse('');
-                            alert('Reflection saved!');
-                            if (auth.currentUser) {
-                                await saveJournalEntry(auth.currentUser.uid, updated[latestIndex]);
-                            }
-                        }}
-                        style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#4caf50', color: '#fff', border: 'none', borderRadius: '4px' }}
-                    >
-                        Save Reflection
-                    </button>
-                </div>
+                <Box mt={6}>
+                    <Text mb={2}>Would you like a reflection from your Copilot?</Text>
+                    <Button onClick={handleReflection} colorScheme="blue">
+                        Get Reflection
+                    </Button>
+                </Box>
             )}
 
             {logs.length > 0 && (
-                <div style={{ marginTop: '3rem' }}>
-                    <h2>Your Mood Journal</h2>
-                    <JournalBook entries={logs} />
-                </div>
+                <Box mt={10}>
+                    <Text fontSize="xl" fontWeight="bold" mb={4}>
+                        Your Mood Journal
+                    </Text>
+                    <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
+                        {logs.map((entry, index) => (
+                            <GridItem
+                                key={index}
+                                p={4}
+                                bg="white"
+                                borderRadius="md"
+                                boxShadow="md"
+                                border="1px solid"
+                                borderColor={useColorModeValue('gray.200', 'gray.700')}
+                            >
+                                <Text fontWeight="bold">{entry.date}</Text>
+                                <Text>Mood: {entry.label}</Text>
+                                <Text mt={2} fontStyle="italic">
+                                    {entry.note || 'No note'}
+                                </Text>
+                                {entry.reflection && (
+                                    <Box mt={3}>
+                                        <Text fontWeight="semibold">Reflection:</Text>
+                                        <Text fontSize="sm" color="gray.600">
+                                            {entry.reflection}
+                                        </Text>
+                                    </Box>
+                                )}
+                            </GridItem>
+                        ))}
+                    </Grid>
+                </Box>
             )}
-        </div>
+        </Box>
     );
 }
 
