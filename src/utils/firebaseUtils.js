@@ -26,10 +26,14 @@ export async function fetchJournalEntries(uid) {
 export function listenToJournalEntries(uid, onUpdate) {
     const q = query(collection(db, 'users', uid, 'journalEntries'));
     return onSnapshot(q, (snapshot) => {
-        const entries = snapshot.docs.map(doc => doc.data());
+        const entries = snapshot.docs.map(docSnap => ({
+            id: docSnap.id,  // 🚀 include Firestore document ID!
+            ...docSnap.data(),
+        }));
         onUpdate(entries);
     });
 }
+
 
 export async function saveChatMessage(uid, message) {
     const ref = collection(db, 'users', uid, 'copilotMessages');
@@ -99,3 +103,8 @@ export async function createChatSession(uid, title, characterId = null) {
     });
     return chatRef.id;
 }
+
+export const deleteJournalEntry = async (uid, entryId) => {
+    const entryRef = doc(db, 'users', uid, 'journalEntries', entryId);
+    await deleteDoc(entryRef);
+};

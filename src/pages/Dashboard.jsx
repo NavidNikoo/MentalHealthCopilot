@@ -1,6 +1,7 @@
 import MoodChart from '../components/MoodChart';
 import MoodBreakdown from '../components/MoodBreakdown';
-import { useState, useEffect } from 'react';
+import { useLogs } from '../context/LogsContext';
+import { Box, Flex, Heading, Button, Text, Divider } from '@chakra-ui/react';
 
 function calculateStreaks(logs) {
     if (!logs.length) return { current: 0, max: 0 };
@@ -26,53 +27,45 @@ function calculateStreaks(logs) {
     return { current: currentStreak, max };
 }
 
-
 function Dashboard() {
-    const [resetTrigger, setResetTrigger] = useState(false);
-    const [logs, setLogs] = useState([]);
-
-    useEffect(() => {
-        const savedLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
-        setLogs(savedLogs);
-    }, [resetTrigger]);
+    const { logs, setLogs } = useLogs();
 
     const handleReset = () => {
         localStorage.removeItem('moodLogs');
-        setResetTrigger(!resetTrigger); // triggers re-render
+        setLogs([]);
     };
 
     const { current, max } = calculateStreaks(logs);
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <h1>Dashboard</h1>
+        <Box p={8}>
+            <Heading mb={4}>Dashboard</Heading>
 
-            <div style={{ marginBottom: '1rem' }}>
-                <p><strong>Current Streak:</strong> {current} day{current !== 1 ? 's' : ''}</p>
-                <p><strong>Longest Streak:</strong> {max} day{max !== 1 ? 's' : ''}</p>
-            </div>
+            <Flex align="center" justify="space-between" mb={6}>
+                <Box>
+                    <Text fontSize="lg" fontWeight="bold">Current Streak: {current} day{current !== 1 ? 's' : ''}</Text>
+                    <Text fontSize="lg" fontWeight="bold">Longest Streak: {max} day{max !== 1 ? 's' : ''}</Text>
+                </Box>
+                <Button colorScheme="red" onClick={handleReset}>
+                    Reset Mood History
+                </Button>
+            </Flex>
 
-            <button
-                onClick={handleReset}
-                style={{
-                    marginBottom: '1rem',
-                    padding: '0.5rem 1rem',
-                    background: '#ff4d4f',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer'
-                }}
-            >
-                Reset Mood History
-            </button>
+            <Divider mb={6} />
 
-            <MoodChart key={resetTrigger} />
-            <MoodBreakdown logs={logs} />
-        </div>
+            <Box mb={10}>
+                <Heading size="md" mb={4}>Mood History</Heading>
+                <MoodChart logs={logs} />
+            </Box>
+
+            <Divider mb={6} />
+
+            <Box>
+                <Heading size="md" mb={4}>Mood Breakdown</Heading>
+                <MoodBreakdown logs={logs} />
+            </Box>
+        </Box>
     );
-
 }
-
 
 export default Dashboard;

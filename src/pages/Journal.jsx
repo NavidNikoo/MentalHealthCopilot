@@ -3,54 +3,50 @@ import {
     Box,
     Button,
     Grid,
-    GridItem,
     Text,
     Textarea,
-    useColorModeValue,
+    useDisclosure,
 } from '@chakra-ui/react';
+
 import MoodSelector from '../components/MoodSelector';
+import JournalCard from '../components/JournalCard';
+import JournalEntryModal from '../components/JournalEntryModal';
+
 import {
     saveJournalEntry,
     listenToJournalEntries,
+    deleteJournalEntry
 } from '../utils/firebaseUtils';
 import { auth } from '../firebase';
+
+// Simple ID generator
+const generateId = () => {
+    return Date.now().toString() + Math.random().toString(36).substring(2);
+};
 
 function Journal() {
     const [mood, setMood] = useState(null);
     const [note, setNote] = useState('');
     const [logs, setLogs] = useState([]);
-    const [awaitingReflection, setAwaitingReflection] = useState(false);
-    const [copilotResponse, setCopilotResponse] = useState('');
-    const [latestIndex, setLatestIndex] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [selectedEntry, setSelectedEntry] = useState(null);
 
     useEffect(() => {
         const user = auth.currentUser;
 
         if (user) {
-            // Fetch entries once and combine with localStorage if needed
+            setIsLoggedIn(true);
             listenToJournalEntries(user.uid, (entries) => {
-                // Merge entries with localStorage data to preserve reflection
-                const localLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
-
-                // Prevent duplicates by matching on date + note
-                const merged = [...entries];
-
-                localLogs.forEach((localEntry) => {
-                    const exists = merged.find(
-                        (e) => e.date === localEntry.date && e.note === localEntry.note
-                    );
-                    if (!exists) merged.push(localEntry);
-                });
-
-                setLogs(merged);
+                setLogs(entries);
             });
         } else {
+            setIsLoggedIn(false);
             const savedLogs = JSON.parse(localStorage.getItem('moodLogs')) || [];
             setLogs(savedLogs);
         }
     }, []);
-
-
 
     const handleSubmit = async () => {
         if (!mood) {
@@ -59,32 +55,32 @@ function Journal() {
         }
 
         const newEntry = {
+            id: generateId(),
             date: new Date().toISOString().split('T')[0],
             label: mood.label,
             value: mood.value,
             color: mood.color,
             note,
             reflection: '',
+            response: '',
         };
 
         const updatedLogs = [...logs, newEntry];
-        localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         setLogs(updatedLogs);
-        setLatestIndex(updatedLogs.length - 1);
+
         setMood(null);
         setNote('');
-        setCopilotResponse(''); // ✅ clear previous reflection display
-        setAwaitingReflection(true);
 
-        if (auth.currentUser) {
+        if (isLoggedIn && auth.currentUser) {
             await saveJournalEntry(auth.currentUser.uid, newEntry);
+        } else {
+            localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         }
     };
 
-
-    const handleReflection = async () => {
-        const moodLabel = logs[latestIndex]?.label || '';
-        const userNote = logs[latestIndex]?.note || '';
+    const handleReflection = async (entry) => {
+        const moodLabel = entry?.label || '';
+        const userNote = entry?.note || '';
 
         const prompt = `The user clearly expressed the mood "${moodLabel}" and wrote the following journal note: "${userNote}". Based on this, write a brief, emotionally intelligent reflection that validates what they’re feeling and gently helps them explore it further.`;
 
@@ -105,15 +101,53 @@ function Journal() {
 
         const data = await response.json();
         const reply = data.choices?.[0]?.message?.content || 'Something went wrong.';
-        setCopilotResponse('');
-        setAwaitingReflection(false);
 
-        const updatedLogs = [...logs];
-        updatedLogs[latestIndex].reflection = reply;
-        localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
+        const updatedLogs = logs.map((log) =>
+            log.id === entry.id ? { ...log, reflection: reply } : log
+        );
         setLogs(updatedLogs);
+
+        if (isLoggedIn && auth.currentUser) {
+            await saveJournalEntry(auth.currentUser.uid, {
+                ...entry,
+                reflection: reply,
+            });
+        } else {
+            localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
+        }
     };
 
+    const handleDeleteEntry = async (entry) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this entry?');
+        if (!confirmDelete) return;
+
+        const updatedLogs = logs.filter((log) => log.id !== entry.id);
+        setLogs(updatedLogs);
+
+        if (isLoggedIn && auth.currentUser && entry.id) {
+            await deleteJournalEntry(auth.currentUser.uid, entry.id);
+        } else {
+            localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
+        }
+    };
+
+    const handleOpenModal = (entry) => {
+        setSelectedEntry(entry);
+        onOpen();
+    };
+
+    const handleSaveEntry = async (updatedEntry) => {
+        const updatedLogs = logs.map((log) =>
+            log.id === updatedEntry.id ? updatedEntry : log
+        );
+        setLogs(updatedLogs);
+
+        if (isLoggedIn && auth.currentUser) {
+            await saveJournalEntry(auth.currentUser.uid, updatedEntry);
+        } else {
+            localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
+        }
+    };
 
     return (
         <Box p={6}>
@@ -133,49 +167,31 @@ function Journal() {
                 </Box>
             )}
 
-            {awaitingReflection && (
-                <Box mt={6}>
-                    <Text mb={2}>Would you like a reflection from your Copilot?</Text>
-                    <Button onClick={handleReflection} colorScheme="blue">
-                        Get Reflection
-                    </Button>
-                </Box>
-            )}
-
             {logs.length > 0 && (
                 <Box mt={10}>
                     <Text fontSize="xl" fontWeight="bold" mb={4}>
                         Your Mood Journal
                     </Text>
                     <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={4}>
-                        {logs.map((entry, index) => (
-                            <GridItem
-                                key={index}
-                                p={4}
-                                bg="white"
-                                borderRadius="md"
-                                boxShadow="md"
-                                border="1px solid"
-                                borderColor={useColorModeValue('gray.200', 'gray.700')}
-                            >
-                                <Text fontWeight="bold">{entry.date}</Text>
-                                <Text>Mood: {entry.label}</Text>
-                                <Text mt={2} fontStyle="italic">
-                                    {entry.note || 'No note'}
-                                </Text>
-                                {entry.reflection && (
-                                    <Box mt={3}>
-                                        <Text fontWeight="semibold">Reflection:</Text>
-                                        <Text fontSize="sm" color="gray.600">
-                                            {entry.reflection}
-                                        </Text>
-                                    </Box>
-                                )}
-                            </GridItem>
+                        {logs.map((entry) => (
+                            <JournalCard
+                                key={entry.id}
+                                entry={entry}
+                                onGetReflection={handleReflection}
+                                onDelete={handleDeleteEntry}
+                                onOpenModal={() => handleOpenModal(entry)}
+                            />
                         ))}
                     </Grid>
                 </Box>
             )}
+
+            <JournalEntryModal
+                isOpen={isOpen}
+                onClose={onClose}
+                entry={selectedEntry}
+                onSave={handleSaveEntry}
+            />
         </Box>
     );
 }

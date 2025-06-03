@@ -1,39 +1,117 @@
+/* General Container Styles */
 .copilot-container {
-    padding: 2rem;
-    max-width: 700px;
-    margin: auto;
+    display: flex;
+    height: 100vh;
+    width: 100vw;
     font-family: 'Segoe UI', sans-serif;
-    overflow-y: auto;
     background: #fcfcfc;
 }
 
-.copilot-title {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.chat-box {
-    height: 400px;
+.sidebar {
+    background-color: #f8fafc;
+    border-right: 1px solid #e2e8f0;
     overflow-y: auto;
-    border: 1px solid #ccc;
-    padding: 1rem;
-    border-radius: 10px;
-    background: #fafafa;
 }
 
+/* Sidebar items */
+.sidebar-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sidebar-item:hover {
+    background-color: #edf2f7;
+}
+
+.sidebar-item.active {
+    background-color: #e2e8f0;
+    font-weight: bold;
+}
+
+/* Character Header */
+.character-header {
+    background-color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #e0e7ef;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    border-radius: 0 0 12px 12px; /* smoother, rounded bottom corners */
+    position: sticky;
+    top: 0;
+    z-index: 200;
+}
+
+.character-header:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.character-avatar {
+    width: 60px;  /* slightly increased from 50px */
+    height: 60px; /* slightly increased from 50px */
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.character-avatar:hover {
+    transform: scale(1.1);
+}
+
+
+.character-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.character-name {
+    font-weight: bold;
+    color: #374151;
+    font-size: 1.1rem;
+}
+
+.character-role {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.character-selector {
+    margin-left: auto;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s;
+}
+
+.character-selector:hover {
+    color: #4b5563;
+}
+
+/* Chat Messages Container */
+.chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background-color: #fafafa;
+}
+
+/* Chat Message Bubbles */
 .message {
-    margin-bottom: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
     max-width: 80%;
     word-wrap: break-word;
+    transition: transform 0.2s ease;
 }
 
 .message.user {
     background-color: #d1e7dd;
     align-self: flex-end;
-    text-align: right;
-    margin-left: auto;
 }
 
 .message.assistant {
@@ -41,21 +119,36 @@
     align-self: flex-start;
 }
 
+.message:hover {
+    transform: translateY(-2px);
+}
+
+/* Input Area */
 .input-area {
+    position: sticky;
+    bottom: 0;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
     display: flex;
-    margin-top: 1rem;
     gap: 1rem;
 }
 
-input[type="text"] {
+.input-area input[type="text"] {
     flex: 1;
     padding: 0.75rem;
-    font-size: 1rem;
     border-radius: 8px;
     border: 1px solid #ccc;
+    transition: box-shadow 0.2s ease;
 }
 
-button {
+.input-area input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #6ec1b3;
+}
+
+.input-area button {
     padding: 0.75rem 1.2rem;
     background-color: #4bc0c0;
     color: white;
@@ -63,12 +156,14 @@ button {
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-button:hover {
+.input-area button:hover {
     background-color: #35a8a8;
 }
 
+/* Typing Indicator */
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -77,7 +172,6 @@ button:hover {
     padding: 1rem;
     border-radius: 8px;
     max-width: fit-content;
-    margin-bottom: 1rem;
     font-style: italic;
 }
 
@@ -92,7 +186,6 @@ button:hover {
 }
 
 .typing-dots span {
-    display: block;
     width: 6px;
     height: 6px;
     background: #333;
@@ -101,15 +194,9 @@ button:hover {
     animation: blink 1.4s infinite;
 }
 
-.typing-dots span:nth-child(1) {
-    animation-delay: 0s;
-}
-.typing-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-.typing-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-}
+.typing-dots span:nth-child(1) { animation-delay: 0s; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes blink {
     0%, 100% { opacity: 0; }
@@ -121,30 +208,13 @@ button:hover {
     50% { transform: scale(1.2); }
 }
 
-/* Default fallback */
+/* Unique Character Names */
 .copilot-name {
     font-weight: bold;
 }
 
-/* Unique colors for each character */
-.copilot-name.brett {
-    color: #1f8a70;
-}
-
-.copilot-name.britney {
-    color: #e57373;
-}
-
-.copilot-name.kai {
-    color: #5c6bc0;
-}
-
-.copilot-name.lee {
-    color: #00897b;
-}
-
-.copilot-name.zari {
-    color: #ba68c8;
-}
-
-
+.copilot-name.brett { color: #1f8a70; }
+.copilot-name.britney { color: #e57373; }
+.copilot-name.kai { color: #5c6bc0; }
+.copilot-name.lee { color: #00897b; }
+.copilot-name.zari { color: #ba68c8; }

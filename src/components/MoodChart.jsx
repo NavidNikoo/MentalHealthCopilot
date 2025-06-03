@@ -1,10 +1,21 @@
+// src/components/MoodChart.jsx
+
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend } from 'chart.js';
+import {
+    Chart as ChartJS,
+    LineElement,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { useLogs } from '../context/LogsContext';
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
 function MoodChart() {
-    const logs = JSON.parse(localStorage.getItem('moodLogs')) || [];
+    const { logs } = useLogs();  // ✅ Correct hook
 
     if (logs.length === 0) {
         return <p style={{ textAlign: 'center' }}>No mood data logged yet.</p>;
@@ -30,22 +41,23 @@ function MoodChart() {
         'Hatred/Rage',
         'Jealousy',
         'Insecurity/Guilt',
-        'Fear/Grief/Powerlessness'
+        'Fear/Grief/Powerlessness',
     ];
 
-
     const data = {
-        labels: logs.map(log => log.date),
+        labels: logs.map(log =>
+            new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        ),
         datasets: [
             {
                 label: 'Mood Trend',
                 data: logs.map(log => log.value),
                 fill: false,
                 borderColor: '#4bc0c0',
-                tension: 0.2,
-                pointRadius: 5
-            }
-        ]
+                tension: 0.3,
+                pointRadius: 5,
+            },
+        ],
     };
 
     const options = {
@@ -55,15 +67,21 @@ function MoodChart() {
                 max: 20,
                 ticks: {
                     stepSize: 1,
-                    callback: (value) => moodLabels[value - 1] || ''
-                }
-            }
-        }
+                    callback: value => moodLabels[value - 1] || '',
+                },
+            },
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top',
+            },
+        },
     };
 
     return (
-        <div style={{ width: '100%', maxWidth: '700px', margin: '2rem auto' }}>
-            <h2>Mood History</h2>
+        <div style={{ width: '100%', maxWidth: '800px', margin: '2rem auto' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>Mood History</h2>
             <Line data={data} options={options} />
         </div>
     );

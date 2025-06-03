@@ -11,7 +11,7 @@ export const emotionScale = [
     { value: 7, label: 'Boredom', color: '#9acd32' },
     { value: 8, label: 'Pessimism', color: '#556b2f' },
     { value: 9, label: 'Frustration/Impatience', color: '#3b3a10' },
-    { value: 10, label: 'Overwhelm', color: '#ffff99' },
+    { value: 10, label: 'Overwhelm', color: '#ffd54f' },  // much nicer golden yellow
     { value: 11, label: 'Disappointment', color: '#d2b48c' },
     { value: 12, label: 'Doubt', color: '#ffcc66' },
     { value: 13, label: 'Worry', color: '#ff9933' },

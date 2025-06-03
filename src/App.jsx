@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Box, Flex, Button } from '@chakra-ui/react';
 import Home from './pages/Home';
@@ -10,6 +11,9 @@ import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
+
+// 👉 Add this:
+import { LogsProvider } from './context/LogsContext';
 
 function AppRoutes() {
     const { user } = useAuth();
@@ -63,8 +67,10 @@ function AppRoutes() {
 
 export default function App() {
     return (
-        <Router>
-            <AppRoutes />
-        </Router>
+        <LogsProvider>  {/* 🔥 Wrap everything so Journal & Dashboard share logs */}
+            <Router>
+                <AppRoutes />
+            </Router>
+        </LogsProvider>
     );
 }
