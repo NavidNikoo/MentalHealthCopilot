@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
     Box,
-    Button,
     Grid,
     Text,
-    Textarea,
     useDisclosure,
 } from '@chakra-ui/react';
 
@@ -19,14 +17,11 @@ import {
 } from '../utils/firebaseUtils';
 import { auth } from '../firebase';
 
-// Simple ID generator
 const generateId = () => {
     return Date.now().toString() + Math.random().toString(36).substring(2);
 };
 
 function Journal() {
-    const [mood, setMood] = useState(null);
-    const [note, setNote] = useState('');
     const [logs, setLogs] = useState([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -48,28 +43,19 @@ function Journal() {
         }
     }, []);
 
-    const handleSubmit = async () => {
-        if (!mood) {
-            alert('Please select a mood.');
-            return;
-        }
-
+    // New Save Mood Entry
+    const handleSaveMoodEntry = async (entry) => {
         const newEntry = {
             id: generateId(),
             date: new Date().toISOString().split('T')[0],
-            label: mood.label,
-            value: mood.value,
-            color: mood.color,
-            note,
+            moods: entry.moods,
+            note: entry.note,
             reflection: '',
             response: '',
         };
 
         const updatedLogs = [...logs, newEntry];
         setLogs(updatedLogs);
-
-        setMood(null);
-        setNote('');
 
         if (isLoggedIn && auth.currentUser) {
             await saveJournalEntry(auth.currentUser.uid, newEntry);
@@ -79,10 +65,10 @@ function Journal() {
     };
 
     const handleReflection = async (entry) => {
-        const moodLabel = entry?.label || '';
+        const moodLabels = entry?.moods?.map(m => m.label).join(', ') || '';
         const userNote = entry?.note || '';
 
-        const prompt = `The user clearly expressed the mood "${moodLabel}" and wrote the following journal note: "${userNote}". Based on this, write a brief, emotionally intelligent reflection that validates what they’re feeling and gently helps them explore it further.`;
+        const prompt = `The user selected the moods "${moodLabels}" and wrote: "${userNote}". Write an emotionally supportive reflection.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -151,21 +137,8 @@ function Journal() {
 
     return (
         <Box p={6}>
-            <MoodSelector onSelect={setMood} />
-
-            {mood && (
-                <Box mt={6}>
-                    <Textarea
-                        placeholder="Want to add a note?"
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        rows={4}
-                    />
-                    <Button onClick={handleSubmit} mt={4} colorScheme="teal">
-                        Save Mood
-                    </Button>
-                </Box>
-            )}
+            {/* Final Clean — Only MoodSelector */}
+            <MoodSelector onSave={handleSaveMoodEntry} />
 
             {logs.length > 0 && (
                 <Box mt={10}>

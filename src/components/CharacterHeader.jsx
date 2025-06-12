@@ -1,55 +1,85 @@
+import React from 'react';
 import {
-    Box,
-    Avatar,
-    Text,
     Menu,
     MenuButton,
     MenuList,
     MenuItem,
+    Avatar,
+    Text,
     Flex,
+    Box,
+    Button
 } from '@chakra-ui/react';
-import { ChevronDownIcon } from '@chakra-ui/icons';
 import characters from '../data/characters';
+import { saveChatMessageToSession } from '../utils/firebaseUtils';
+import { auth } from '../firebase';
 
-function CharacterHeader({ character, setCharacter }) {
+function CharacterHeader({ character, setCharacter, setMessages, activeChatId }) {
+    const handleCharacterSwitch = async (char) => {
+        setCharacter(char);
+
+        if (!auth.currentUser || !activeChatId) return;
+
+        const systemMessage = {
+            role: 'system',
+            content: `You switched to ${char.name} (${char.role}).`
+        };
+
+        await saveChatMessageToSession(auth.currentUser.uid, activeChatId, systemMessage);
+
+        setMessages(prev => [...prev, systemMessage]);
+    };
+
     return (
-        <Box
-            position="sticky"
-            top={0}
+        <Flex
+            align="center"
+            justify="flex-start"
+            py={3}                 // more balanced padding
+            px={6}                 // wider spacing
             bg="white"
-            zIndex={1000}
-            boxShadow="sm"
-            borderBottom="1px solid #ccc"
+            boxShadow="sm"         // soft shadow instead of ugly border line
         >
             <Menu>
                 <MenuButton
-                    as={Flex}
-                    align="center"
-                    justify="space-between"
+                    as={Button}
+                    variant="ghost"
+                    _hover={{ bg: 'gray.100' }}    // slightly stronger hover
+                    _active={{ bg: 'gray.200' }}
+                    px={4}                        // wider horizontal padding
+                    py={3}                        // taller vertical padding
+                    borderRadius="md"
                     cursor="pointer"
-                    p={3}
-                    _hover={{ bg: 'gray.100' }}
                 >
-                    <Flex align="center">
-                        <Avatar src={character.avatar} name={character.name} size="md" mr={3} /> {/*possible values: 2xs, xs, sm, md, lg, xl, 2xl, full*/}
-                        <Box>
-                            <Text fontWeight="bold">{character.name}</Text>
-                            <Text fontSize="sm" color="gray.600">{character.role}</Text>
+                    <Flex align="center" gap={4}>   {/* more gap */}
+                        <Avatar src={character.avatar} name={character.name} size="md" />
+                        <Box textAlign="left">
+                            <Text fontWeight="bold" fontSize="md">
+                                {character.name}
+                            </Text>
+                            <Text fontSize="sm" color="gray.600">
+                                {character.role}
+                            </Text>
                         </Box>
                     </Flex>
-                    <ChevronDownIcon />
                 </MenuButton>
 
                 <MenuList>
                     {characters.map((char) => (
-                        <MenuItem key={char.id} onClick={() => setCharacter(char)}>
-                            <Avatar src={char.avatar} name={char.name} size="xs" mr={2} />
-                            {char.name} - {char.role}
+                        <MenuItem key={char.id} onClick={() => handleCharacterSwitch(char)}>
+                            <Flex align="center" gap={3}>
+                                <Avatar src={char.avatar} name={char.name} size="sm" />
+                                <Box>
+                                    <Text fontWeight="medium">{char.name}</Text>
+                                    <Text fontSize="xs" color="gray.500">
+                                        {char.role}
+                                    </Text>
+                                </Box>
+                            </Flex>
                         </MenuItem>
                     ))}
                 </MenuList>
             </Menu>
-        </Box>
+        </Flex>
     );
 }
 

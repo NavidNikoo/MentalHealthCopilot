@@ -1,4 +1,4 @@
-import { collection, addDoc, setDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, setDoc, getDocs, getDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 
@@ -108,3 +108,20 @@ export const deleteJournalEntry = async (uid, entryId) => {
     const entryRef = doc(db, 'users', uid, 'journalEntries', entryId);
     await deleteDoc(entryRef);
 };
+
+// Save User Profile
+export async function saveUserProfile(uid, profileData) {
+    const profileRef = doc(db, 'users', uid, 'profile', 'main');  // ✅ FIXED
+    await setDoc(profileRef, profileData);
+}
+
+// Fetch User Profile
+export async function fetchUserProfile(uid) {
+    const profileRef = doc(db, 'users', uid, 'profile', 'main');  // ✅ FIXED
+    const profileSnap = await getDoc(profileRef);
+    if (profileSnap.exists()) {
+        return profileSnap.data();
+    } else {
+        return null;
+    }
+}

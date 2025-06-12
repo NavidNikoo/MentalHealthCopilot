@@ -15,7 +15,7 @@ import { useLogs } from '../context/LogsContext';
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
 function MoodChart() {
-    const { logs } = useLogs();  // ✅ Correct hook
+    const { logs } = useLogs();
 
     if (logs.length === 0) {
         return <p style={{ textAlign: 'center' }}>No mood data logged yet.</p>;
@@ -44,14 +44,27 @@ function MoodChart() {
         'Fear/Grief/Powerlessness',
     ];
 
+    // NEW → Compute average mood value per day
+    const dates = logs.map(log =>
+        new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    );
+
+    const averageMoodPerDay = logs.map(log => {
+        if (Array.isArray(log.moods) && log.moods.length > 0) {
+            const sum = log.moods.reduce((acc, mood) => acc + mood.value, 0);
+            const avg = sum / log.moods.length;
+            return avg.toFixed(2);
+        } else {
+            return null; // No moods
+        }
+    });
+
     const data = {
-        labels: logs.map(log =>
-            new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        ),
+        labels: dates,
         datasets: [
             {
                 label: 'Mood Trend',
-                data: logs.map(log => log.value),
+                data: averageMoodPerDay,
                 fill: false,
                 borderColor: '#4bc0c0',
                 tension: 0.3,

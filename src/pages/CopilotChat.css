@@ -218,3 +218,32 @@
 .copilot-name.kai { color: #5c6bc0; }
 .copilot-name.lee { color: #00897b; }
 .copilot-name.zari { color: #ba68c8; }
+
+.markdown p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.markdown ul, .markdown ol {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.markdown li {
+    margin-bottom: 0.25rem;
+}
+
+.markdown strong {
+    font-weight: bold;
+}
+
+.markdown em {
+    font-style: italic;
+}
+
+.markdown code {
+    background: #f4f4f4;
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: monospace;
+}

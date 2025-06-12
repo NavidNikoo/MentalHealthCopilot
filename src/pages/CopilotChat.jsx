@@ -9,13 +9,16 @@ import {
     listenToChats,
 } from '../utils/firebaseUtils';
 import { auth, db } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import Sidebar from '../components/Sidebar';
 import CharacterSelect from '../components/CharacterSelect';
 import characters from '../data/characters';
 import TypingIndicator from '../components/TypingIndicator';
 import './CopilotChat.css';
 import CharacterHeader from '../components/CharacterHeader';
+import ReactMarkdown from 'react-markdown';
+import { Avatar } from '@chakra-ui/react';  // ✅ added
+import { useProfile } from '../hooks/useProfile';  // ✅ added
 
 function CopilotChat() {
     const [chats, setChats] = useState([]);
@@ -25,7 +28,11 @@ function CopilotChat() {
     const [loading, setLoading] = useState(false);
     const [character, setCharacter] = useState(null);
     const [loadingCharacter, setLoadingCharacter] = useState(false);
+
     const scrollRef = useRef(null);
+    const chatContainerRef = useRef(null);
+
+    const { profile } = useProfile();  // ✅ added
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -65,9 +72,10 @@ function CopilotChat() {
         })();
     }, [activeChatId]);
 
-
     useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const container = chatContainerRef.current;
+        if (!container) return;
+        container.scrollTop = container.scrollHeight;
     }, [messages]);
 
     const handleNewChat = async () => {
@@ -103,11 +111,8 @@ function CopilotChat() {
         setLoading(true);
 
         const isFirstUserMessage = !messages.some(msg => msg.role === 'user');
-
-        // Save only the user message, not the systemPrompt
         await saveChatMessageToSession(auth.currentUser.uid, activeChatId, userMessage);
 
-        // If this is the first message, generate a title for the chat
         if (isFirstUserMessage) {
             try {
                 const titleRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -138,6 +143,7 @@ function CopilotChat() {
                 console.error('Title generation failed:', e);
             }
         }
+
         try {
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -147,7 +153,10 @@ function CopilotChat() {
                 },
                 body: JSON.stringify({
                     model: 'gpt-3.5-turbo',
-                    messages: updatedMessages
+                    messages: [
+                        { role: 'system', content: character.systemPrompt },
+                        ...updatedMessages
+                    ]
                 })
             });
 
@@ -158,7 +167,7 @@ function CopilotChat() {
             const assistantMessage = {
                 role: 'assistant',
                 content: reply || 'No reply from Copilot.',
-                characterId: character.id  // Add characterId
+                characterId: character.id
             };
             setMessages([...updatedMessages, assistantMessage]);
             await saveChatMessageToSession(auth.currentUser.uid, activeChatId, assistantMessage);
@@ -169,16 +178,8 @@ function CopilotChat() {
         }
     };
 
-
     return (
-        <div
-            style={{
-                display: 'flex',
-                height: 'calc(100vh - 64px)', // adjust this to match your top navbar height
-                width: '100vw',
-                overflow: 'hidden',
-            }}
-        >
+        <div style={{ display: 'flex', height: 'calc(100vh - 64px)', width: '100vw', overflow: 'hidden' }}>
             <Sidebar
                 chats={chats}
                 activeChatId={activeChatId}
@@ -190,24 +191,26 @@ function CopilotChat() {
             />
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Sticky top CharacterHeader */}
                 {character && (
-                    <div
-                        style={{
-                            position: 'sticky',
-                            top: 0,
-                            background: '#fff',
-                            zIndex: 1000,
-                            borderBottom: '1px solid #ccc',
-                            padding: '0.5rem 2rem',
-                        }}
-                    >
-                        <CharacterHeader character={character} setCharacter={setCharacter}/>
+                    <div style={{
+                        position: 'sticky',
+                        top: 0,
+                        background: '#fff',
+                        zIndex: 1000,
+                        padding: '1rem 2rem',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    }}>
+                        <CharacterHeader
+                            character={character}
+                            setCharacter={setCharacter}
+                            setMessages={setMessages}
+                            activeChatId={activeChatId}
+                        />
                     </div>
                 )}
 
-                {/* Scrollable chat messages */}
                 <div
+                    ref={chatContainerRef}
                     style={{
                         flex: 1,
                         overflowY: 'auto',
@@ -228,70 +231,90 @@ function CopilotChat() {
                     )}
 
                     {!loadingCharacter && character && (
-                        <>
-                            <AnimatePresence mode="wait">
-                                {messages.map((msg, idx) => (
-                                    <motion.div
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3 }}
-                                        style={{
-                                            backgroundColor: msg.role === 'user' ? '#daf3eb' : '#fdecea',
-                                            padding: '1rem',
-                                            borderRadius: '8px',
-                                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                            maxWidth: '85%',
-                                        }}
-                                    >
-                                        <strong>
-                                            {msg.role === 'user'
-                                                ? 'You'
-                                                : msg.characterName
-                                                || (msg.characterId && characters.find(c => c.id === msg.characterId)?.name)
-                                                || character?.name
-                                                || 'Copilot'}
-                                            :</strong> {msg.content}
-                                    </motion.div>
-                                ))}
+                        <AnimatePresence initial={false}>
+                            {messages.map((msg, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                                        alignItems: 'flex-start',
+                                        gap: '0.75rem',
+                                        backgroundColor: msg.role === 'user'
+                                            ? '#daf3eb'
+                                            : msg.role === 'system'
+                                                ? '#f0f0f0'
+                                                : characters.find(c => c.id === msg.characterId)?.color || '#fdecea',
+                                        padding: '1rem',
+                                        borderRadius: '8px',
+                                        maxWidth: '85%',
+                                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                    }}
+                                >
+                                    {msg.role !== 'system' && (
+                                        msg.role === 'user' ? (
+                                            <Avatar
+                                                size="sm"
+                                                src={profile?.avatarUrl || '/default-avatar.png'}
+                                                name={`${profile?.firstName || ''} ${profile?.lastName || ''}`}
+                                            />
+                                        ) : (
+                                            <Avatar
+                                                size="sm"
+                                                src={characters.find(c => c.id === msg.characterId)?.avatar || '/avatars/default.png'}
+                                                name={msg.characterName || 'Copilot'}
+                                            />
+                                        )
+                                    )}
 
-                                {loading && (
-                                    <motion.div
-                                        key="typing"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="typing-indicator"
-                                    >
-                                        <div className="typing-avatar">💬</div>
-                                        <div className="typing-dots">
-                                            <span></span>
-                                            <span></span>
-                                            <span></span>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </>
+                                    <div style={{ flex: 1 }}>
+                                        {msg.role === 'system' ? (
+                                            <em style={{ color: '#888' }}>{msg.content}</em>
+                                        ) : (
+                                            <ReactMarkdown className="markdown">
+                                                {msg.content}
+                                            </ReactMarkdown>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            ))}
+
+                            {loading && (
+                                <motion.div
+                                    key="typing"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="typing-indicator"
+                                >
+                                    <div className="typing-avatar">💬</div>
+                                    <div className="typing-dots">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     )}
                 </div>
 
-                {/* Fixed bottom input bar */}
                 {character && (
-                    <div
-                        style={{
-                            position: 'sticky',
-                            bottom: 0,
-                            padding: '1rem 2rem',
-                            background: '#fff',
-                            borderTop: '1px solid #ccc',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            zIndex: 1000,
-                        }}
-                    >
+                    <div style={{
+                        position: 'sticky',
+                        bottom: 0,
+                        padding: '1rem 2rem',
+                        background: '#fff',
+                        borderTop: '1px solid #ccc',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        zIndex: 1000,
+                    }}>
                         <input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -328,7 +351,6 @@ function CopilotChat() {
             </div>
         </div>
     );
-
 }
 
 export default CopilotChat;

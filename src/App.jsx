@@ -11,6 +11,11 @@ import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
+import Header from './components/Header';
+import Profile from './pages/Profile';
+import WelcomeQuiz from './pages/WelcomeQuiz.jsx';
+import EditProfile from './pages/EditProfile';
+import Landing from './pages/Landing';
 
 // 👉 Add this:
 import { LogsProvider } from './context/LogsContext';
@@ -25,40 +30,20 @@ function AppRoutes() {
 
     return (
         <Flex direction="column" w="100vw" h="100vh">
-            <Box
-                as="nav"
-                display="flex"
-                gap="1rem"
-                p="1rem"
-                bg="gray.100"
-                borderBottom="1px solid #ccc"
-            >
-                <Link to="/">Home</Link>
-                {user ? (
-                    <>
-                        <Link to="/journal">Journal</Link>
-                        <Link to="/copilot">Copilot Chat</Link>
-                        <Link to="/dashboard">Dashboard</Link>
-                        <Button size="sm" colorScheme="gray" onClick={handleLogout}>
-                            Logout
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        <Link to="/login">Login</Link>
-                        <Link to="/signup">Sign Up</Link>
-                    </>
-                )}
-            </Box>
+            {/* NEW: Use polished header */}
+            <Header user={user} onLogout={handleLogout} />
 
-            <Box flex="1" h="100%" w="100%">
+            <Box flex="1" h="100%" w="100%" overflowY="auto">
                 <Routes>
-                    <Route path="/" element={<Home />} />
+                    <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<SignUp />} />
+                    <Route path="/welcome" element={<PrivateRoute><WelcomeQuiz /></PrivateRoute>} />
+                    <Route path="/edit-profile" element={<PrivateRoute><EditProfile /></PrivateRoute>} />
                     <Route path="/journal" element={<PrivateRoute><Journal /></PrivateRoute>} />
                     <Route path="/copilot" element={<PrivateRoute><CopilotChat /></PrivateRoute>} />
                     <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 </Routes>
             </Box>
         </Flex>

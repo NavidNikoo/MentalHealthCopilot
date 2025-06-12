@@ -1,4 +1,5 @@
 // src/components/MoodBreakdown.jsx
+
 import { Pie, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -15,13 +16,20 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Le
 function MoodBreakdown({ logs }) {
     const moodCounts = {};
     let moodSum = 0;
+    let moodValueCount = 0;
 
     logs.forEach(log => {
-        moodCounts[log.label] = (moodCounts[log.label] || 0) + 1;
-        moodSum += log.value;
+        // After flattening, each log already has:
+        // { label, value, color }
+
+        if (log.label && log.value) {
+            moodCounts[log.label] = (moodCounts[log.label] || 0) + 1;
+            moodSum += log.value;
+            moodValueCount += 1;
+        }
     });
 
-    const avgMood = logs.length ? (moodSum / logs.length).toFixed(2) : 'N/A';
+    const avgMood = moodValueCount ? (moodSum / moodValueCount).toFixed(2) : 'N/A';
 
     const labels = Object.keys(moodCounts);
     const data = Object.values(moodCounts);

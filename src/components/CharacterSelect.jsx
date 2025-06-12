@@ -16,14 +16,16 @@ function CharacterSelect({ onChoose, auth, activeChatId, setCharacter, setMessag
         if (messages.length === 0) {
             const welcomeMessage = {
                 role: 'assistant',
-                content: `Hi, I'm ${char.name}, your ${char.role.toLowerCase()}. How can I support you today?`
+                content: char.welcomeMessage || `Hi, I'm ${char.name}, your ${char.role.toLowerCase()}. How can I support you today?`,
+                characterId: char.id,
+                characterName: char.name
             };
             await saveChatMessageToSession(auth.currentUser.uid, activeChatId, welcomeMessage);
             setMessages([welcomeMessage]);
         }
 
         if (onChoose) {
-            onChoose(char); // Optional if you're using it for side effects
+            onChoose(char);
         }
     };
 
@@ -32,7 +34,14 @@ function CharacterSelect({ onChoose, auth, activeChatId, setCharacter, setMessag
             <h2 className="character-heading">Choose Your Copilot</h2>
             <div className="character-grid">
                 {characters.map((char) => (
-                    <div key={char.id} className="character-card" onClick={() => handleSelect(char)}>
+                    <div
+                        key={char.id}
+                        className="character-card"
+                        onClick={() => handleSelect(char)}
+                        style={{
+                            '--hover-color': `${char.color}20`
+                        }}
+                    >
                         <img src={char.avatar} alt={char.name} className="character-avatar" />
                         <h3>{char.name}</h3>
                         <p className="character-role">{char.role}</p>
