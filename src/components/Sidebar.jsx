@@ -8,7 +8,8 @@ import {
     MenuButton,
     MenuList,
     MenuItem,
-    useColorModeValue
+    useColorModeValue,
+    useToast
 } from '@chakra-ui/react';
 import { HamburgerIcon } from '@chakra-ui/icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -22,6 +23,8 @@ function Sidebar({
                      onDeleteChat,
                      onReorderChats
                  }) {
+    const toast = useToast();
+
     const handleDragEnd = (result) => {
         const { source, destination } = result;
         if (!destination || source.index === destination.index) return;
@@ -30,6 +33,32 @@ function Sidebar({
         const [moved] = reordered.splice(source.index, 1);
         reordered.splice(destination.index, 0, moved);
         onReorderChats(reordered);
+    };
+
+    const handleNewChatClick = async () => {
+        try {
+            if (typeof onNewChat === 'function') {
+                await onNewChat();
+            } else {
+                console.warn('onNewChat is not a function');
+                toast({
+                    title: 'Error',
+                    description: 'New Chat handler is missing.',
+                    status: 'error',
+                    duration: 4000,
+                    isClosable: true,
+                });
+            }
+        } catch (err) {
+            console.error('Error in onNewChat:', err);
+            toast({
+                title: 'Error creating chat',
+                description: err.message,
+                status: 'error',
+                duration: 4000,
+                isClosable: true,
+            });
+        }
     };
 
     return (
@@ -52,7 +81,7 @@ function Sidebar({
                 colorScheme="teal"
                 size="md"
                 mb={4}
-                onClick={onNewChat}
+                onClick={handleNewChatClick}
                 width="100%"
             >
                 + New Chat

@@ -18,7 +18,8 @@ import './CopilotChat.css';
 import CharacterHeader from '../components/CharacterHeader';
 import ReactMarkdown from 'react-markdown';
 import { Avatar } from '@chakra-ui/react';  // ✅ added
-import { useProfile } from '../hooks/useProfile';  // ✅ added
+import { useProfile } from '../hooks/useProfile';
+
 
 function CopilotChat() {
     const [chats, setChats] = useState([]);
@@ -28,11 +29,11 @@ function CopilotChat() {
     const [loading, setLoading] = useState(false);
     const [character, setCharacter] = useState(null);
     const [loadingCharacter, setLoadingCharacter] = useState(false);
+    const { profile, isPremium } = useProfile();
+
 
     const scrollRef = useRef(null);
     const chatContainerRef = useRef(null);
-
-    const { profile } = useProfile();  // ✅ added
 
     useEffect(() => {
         if (!auth.currentUser) return;
@@ -224,9 +225,12 @@ function CopilotChat() {
                         <CharacterSelect
                             auth={auth}
                             activeChatId={activeChatId}
-                            setCharacter={setCharacter}
-                            setMessages={setMessages}
-                            messages={messages}
+                            isPremium={isPremium}
+                            onChoose={(char, msgs) => {
+                                setCharacter(() => char);
+                                setMessages(() => msgs || []);
+                                localStorage.setItem('lastChatId', activeChatId);  // Optional, but helps ensure state is remembered
+                            }}
                         />
                     )}
 

@@ -18,7 +18,11 @@ export function useProfile() {
         const profileSnap = await getDoc(profileRef);
 
         if (profileSnap.exists()) {
-            setProfile(profileSnap.data());
+            const data = profileSnap.data();
+            setProfile({
+                ...data,
+                isPremium: data.isPremium || false  // fallback for older profiles
+            });
         } else {
             setProfile(null);
         }
@@ -33,9 +37,11 @@ export function useProfile() {
         const now = new Date().toISOString();
 
         const profileData = {
+            ...profile,
             ...newData,
             updatedAt: now,
-            createdAt: profile?.createdAt || now
+            createdAt: profile?.createdAt || now,
+            isPremium: newData?.isPremium ?? profile?.isPremium ?? false
         };
 
         await setDoc(profileRef, profileData);
@@ -50,7 +56,8 @@ export function useProfile() {
         profile,
         loading,
         refresh: fetchProfile,
-        saveProfile
+        saveProfile,
+        isPremium: profile?.isPremium || false  // easy access to just the flag
     };
 }
 

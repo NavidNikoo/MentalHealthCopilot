@@ -1,18 +1,38 @@
-// components/Header.jsx
+// src/components/Header.jsx
+import {
+    Box,
+    Flex,
+    Text,
+    Link,
+    Spacer,
+    HStack,
+    Avatar,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    Button,
+} from '@chakra-ui/react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
-import { Box, Flex, Text, Button, Link, Spacer, Avatar, HStack } from '@chakra-ui/react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
-
-
-function Header({ user, onLogout }) {
+function Header() {
+    const { user } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        navigate('/login');
+    };
 
     const navLinks = [
-        { label: 'Home', path: '/' },
         { label: 'Journal', path: '/journal' },
         { label: 'Copilot Chat', path: '/copilot' },
         { label: 'Dashboard', path: '/dashboard' },
-        { label: 'Profile', path: '/profile' },   // ✅ ADD THIS LINE
+        { label: 'Profile', path: '/profile' },
     ];
 
     return (
@@ -26,66 +46,63 @@ function Header({ user, onLogout }) {
             top="0"
             zIndex="999"
         >
-            <Flex align="center">
-                {/* Logo + App Name */}
+            <Flex align="center" justify="space-between">
+                {/* Left: Logo */}
                 <HStack spacing={2}>
-                    <Avatar size="sm" src="/logo.png" />
-                    <Text fontSize="lg" fontWeight="bold" color="teal.600">
-                        Mental Health Copilot
+                    <Text
+                        fontSize="2xl"
+                        fontWeight="bold"
+                        color="teal.600"
+                        as={RouterLink}
+                        to="/"
+                        _hover={{ textDecoration: 'none', opacity: 0.8 }}
+                    >
+                        VIVAMIND
                     </Text>
                 </HStack>
 
-                <Spacer />
-
-                {/* Navigation */}
-                <HStack spacing={6}>
-                    {user && navLinks.map((link) => (
-                        <Link
-                            key={link.path}
-                            as={RouterLink}
-                            to={link.path}
-                            fontWeight={location.pathname === link.path ? 'bold' : 'medium'}
-                            color={location.pathname === link.path ? 'teal.600' : 'gray.600'}
-                            _hover={{ textDecoration: 'none', color: 'teal.500' }}
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-
-                    {!user && (
-                        <>
-                            <Link
-                                as={RouterLink}
-                                to="/login"
-                                fontWeight={location.pathname === '/login' ? 'bold' : 'medium'}
-                                color={location.pathname === '/login' ? 'teal.600' : 'gray.600'}
-                                _hover={{ textDecoration: 'none', color: 'teal.500' }}
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                as={RouterLink}
-                                to="/signup"
-                                fontWeight={location.pathname === '/signup' ? 'bold' : 'medium'}
-                                color={location.pathname === '/signup' ? 'teal.600' : 'gray.600'}
-                                _hover={{ textDecoration: 'none', color: 'teal.500' }}
-                            >
-                                Sign Up
-                            </Link>
-                        </>
-                    )}
-                </HStack>
-
-                <Spacer />
-
-                {/* User Actions */}
+                {/* Center: Navigation */}
                 {user && (
+                    <HStack spacing={6}>
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.path}
+                                as={RouterLink}
+                                to={link.path}
+                                fontWeight={location.pathname === link.path ? 'bold' : 'medium'}
+                                color={location.pathname === link.path ? 'teal.600' : 'gray.600'}
+                                _hover={{ textDecoration: 'none', color: 'teal.500' }}
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
+                    </HStack>
+                )}
+
+                {/* Right: Avatar Menu */}
+                {user && (
+                    <Menu>
+                        <MenuButton>
+                            <Avatar
+                                size="sm"
+                                name={user.displayName || user.email}
+                                src={user.photoURL}
+                            />
+                        </MenuButton>
+                        <MenuList>
+                            <MenuItem as={RouterLink} to="/profile">Profile</MenuItem>
+                            <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                        </MenuList>
+                    </Menu>
+                )}
+
+                {!user && (
                     <HStack spacing={4}>
-                        <Text fontSize="sm" color="gray.600">
-                            Logged in as: {user.email}
-                        </Text>
-                        <Button size="sm" colorScheme="teal" variant="outline" onClick={onLogout}>
-                            Logout
+                        <Button as={RouterLink} to="/login" size="sm" variant="ghost" colorScheme="teal">
+                            Login
+                        </Button>
+                        <Button as={RouterLink} to="/signup" size="sm" colorScheme="teal">
+                            Sign Up
                         </Button>
                     </HStack>
                 )}

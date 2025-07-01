@@ -15,8 +15,12 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hello-pangea/dnd": "^18.0.1",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.3.1",
     "chart.js": "^4.4.9",
     "firebase": "^11.7.3",
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^4.9.0",
     "framer-motion": "^12.16.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
@@ -27,6 +31,8 @@
     "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.6.0",
     "recharts": "^2.15.3",
+    "stripe": "^18.2.1",
+    "swiper": "^11.2.10",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

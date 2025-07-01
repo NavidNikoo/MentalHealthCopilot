@@ -16,6 +16,20 @@ import {
     deleteJournalEntry
 } from '../utils/firebaseUtils';
 import { auth } from '../firebase';
+import { useProfile } from '../hooks/useProfile';
+
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    ModalCloseButton,
+    Button,
+} from '@chakra-ui/react';
+
+
 
 const generateId = () => {
     return Date.now().toString() + Math.random().toString(36).substring(2);
@@ -27,6 +41,9 @@ function Journal() {
 
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [selectedEntry, setSelectedEntry] = useState(null);
+    const { isPremium } = useProfile();
+    const [showLimitModal, setShowLimitModal] = useState(false);
+
 
     useEffect(() => {
         const user = auth.currentUser;
@@ -45,6 +62,12 @@ function Journal() {
 
     // New Save Mood Entry
     const handleSaveMoodEntry = async (entry) => {
+        // Block non-premium users after 3 entries
+        if (!isPremium && logs.length >= 3) {
+            setShowLimitModal(true);
+            return;
+        }
+
         const newEntry = {
             id: generateId(),
             date: new Date().toISOString().split('T')[0],
@@ -63,6 +86,7 @@ function Journal() {
             localStorage.setItem('moodLogs', JSON.stringify(updatedLogs));
         }
     };
+
 
     const handleReflection = async (entry) => {
         const moodLabels = entry?.moods?.map(m => m.label).join(', ') || '';
@@ -165,6 +189,31 @@ function Journal() {
                 entry={selectedEntry}
                 onSave={handleSaveEntry}
             />
+            <Modal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} isCentered>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Premium Feature</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        You’ve reached your 3-entry limit. Upgrade to Premium to unlock unlimited journaling and additional features.
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button onClick={() => setShowLimitModal(false)} mr={3}>
+                            Close
+                        </Button>
+                        <Button
+                            colorScheme="teal"
+                            onClick={() => {
+                                setShowLimitModal(false);
+                                window.location.href = '/profile'; // or your upgrade route
+                            }}
+                        >
+                            Upgrade Now
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
         </Box>
     );
 }
